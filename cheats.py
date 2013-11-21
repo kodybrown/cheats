@@ -100,6 +100,51 @@ def downloadFile( url, filename ):
         print("failed to download file: an exception occurred")
         return False
 
+def listLocal():
+    global sheetPath, downloadUrls, noHeader
+    if not noHeader:
+        print("")
+        print("# Local Cheat Sheets")
+        print("  located at: " + sheetPath + "")
+        print("")
+    files = glob.glob(os.path.join(sheetPath, "*"))
+    fileIndex = 0
+    for f in files:
+        fileIndex += 1
+        print("" + getFileName(f))
+    if fileIndex == 0:
+        print("there are no local files")
+
+def listServer():
+    global sheetPath, downloadUrls, noHeader
+    for u in downloadUrls:
+        if not noHeader:
+            print("")
+            print("# Server Cheat Sheets")
+            print("  location: " + u + "")
+            print("  files that exist locally are denoted with an asterisk (*)")
+            print("")
+        files = ["aes", "mysql", "git"] # TODO Get the list of files on the server..
+        fileIndex = 0
+        for f in files:
+            fileIndex += 1
+            islocal = "*" if os.path.exists(os.path.join(sheetPath, f)) else ""
+            print("" + f + islocal)
+        if fileIndex == 0:
+            print("there are no files on this server")
+    print("")
+    print("<not implemented>")
+
+def removeSheet( sheetname ):
+    global sheetPath
+    fullpath = os.path.join(sheetPath, sheetname)
+    if os.path.exists(fullpath):
+        try:
+            os.remove(fullpath)
+        except OSError as e:
+            if e.errno != errno.ENOENT: # errno.ENOENT == no such file or directory
+                raise # re-raise exception if a different error occured
+
 def usage():
     print("cheat.py - command-line cheat sheets, that works in Windows.")
     print("")
@@ -123,7 +168,7 @@ def usage():
     # --push|upload
 
 def main():
-    global __debug, sheetPath, downloadUrls
+    global __debug, sheetPath, downloadUrls, noHeader
 
     sheetPath = getSheetPath()
     downloadUrls = getDownloadUrls()
@@ -131,9 +176,8 @@ def main():
     debug("downloadUrls", downloadUrls)
 
     forceDownload = False
+    noHeader = False
     args = []
-    listLocal = False
-    listServer = False
 
     if len(sys.argv) < 2:
         usage()
@@ -153,24 +197,30 @@ def main():
                 sys.exit(0)
             elif al == "debug":
                 __debug = True
+            elif al == "noheader":
+                noHeader = True
             elif al in ("download", "force"):
                 forceDownload = True
             elif al in ("!download", "!force"):
                 forceDownload = False
             elif al in ("list", "listlocal"):
-                listLocal = True
-            elif al in ("list-global", "listServer"):
-                listServer = True
+                listLocal()
+            elif al in ("list-server", "listserver"):
+                listServer()
+            elif al.startswith("remove:"):
+                removeSheet(a[7:])
         else:
             al = a.lower()
             if al == "debug":
                 __debug = True
             elif al == "force":
                 forceDownload = True
-            elif al in ("list", "listlocal"):
-                listLocal = True
-            elif al == "listServer":
-                listServer = True
+            elif al in ("list", "listlocal", "list-local"):
+                listLocal()
+            elif al in ("listserver", "list-server"):
+                listServer()
+            elif al.startswith("remove:"):
+                removeSheet(a[7:])
             elif a is not None and len(a) > 0:
                 args.append(a)
 
@@ -178,33 +228,21 @@ def main():
         debug("forceDownload", forceDownload)
         debug("sheetPath", sheetPath)
         debug("args", args)
-        debug("listLocal", listLocal)
-        debug("listServer", listServer)
 
-    if listLocal:
-        print("local cheat sheets (" + sheetPath + ")")
-        files = glob.glob(os.path.join(sheetPath, "*"))
-        for f in files:
-            print(" " + getFileName(f))
-        sys.exit(0)
+    if len(args) > 0:
+        if not validateFile(args[0], forceDownload):
+            sys.exit(1)
 
-    if listServer:
-        print("not implemented")
-        sys.exit(0)
+        destfile = os.path.join(sheetPath, args[0])
+        # with open(destfile, "r") as f:
+        #     content = f.read()
+        # # TODO fancy print the file's content..
+        # print(content)
 
-    if not validateFile(args[0], forceDownload):
-        sys.exit(1)
-
-    destfile = os.path.join(sheetPath, args[0])
-    # with open(destfile, "r") as f:
-    #     content = f.read()
-    # # TODO fancy print the file's content..
-    # print(content)
-
-    # my cat utility already handles outputting files via cli..
-    # https://github.com/kodybrown/cat
-    debug("executing", "cat -w --force-plugin:md " + destfile)
-    os.system("cat -w --force-plugin:md " + destfile)
+        # my cat utility already handles outputting files via cli..
+        # https://github.com/kodybrown/cat
+        debug("executing", "cat -w --force-plugin:md " + destfile)
+        os.system("cat -w --force-plugin:md " + destfile)
 
     sys.exit(0)
 
