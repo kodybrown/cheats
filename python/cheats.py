@@ -205,7 +205,7 @@ def main():
                 listLocal()
             elif al in ("list-server", "listserver"):
                 listServer()
-            elif al.startswith("remove:"):
+            elif al.startswith("remove:") || al.startswith("delete:"):
                 removeSheet(a[7:])
         else:
             al = a.lower()
@@ -240,7 +240,7 @@ def main():
         # my cat utility already handles outputting files via cli..
         # https://github.com/kodybrown/cat
         debug("executing", "cat -w --force-plugin:md " + destfile)
-        os.system("cat -w --force-plugin:md " + destfile)
+        os.system("cat -w --force-plugin:markdown " + destfile)
 
     sys.exit(0)
 
