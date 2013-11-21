@@ -51,6 +51,12 @@ def getDownloadUrls():
         "https://raw.github.com/kodybrown/cheats/master/files/"
     ]
 
+def getFileName( filename ):
+    pos = filename.rfind(os.sep)
+    if pos > -1:
+        return filename[pos + 1:]
+    return ""
+
 def validateFile( filename, forceDownload ):
     global __debug, sheetPath, downloadUrls
 
@@ -106,6 +112,7 @@ def usage():
     print("OPTIONS:")
     print("    --debug        Outputs (a lot of) additional details about what is going on, etc.")
     print("")
+    print("    --list         Lists the local sheets.")
     print("    --download     Forces download even if it already exists locally.")
     print("")
     # TODO
@@ -125,6 +132,8 @@ def main():
 
     forceDownload = False
     args = []
+    listLocal = False
+    listServer = False
 
     if len(sys.argv) < 2:
         usage()
@@ -148,13 +157,40 @@ def main():
                 forceDownload = True
             elif al in ("!download", "!force"):
                 forceDownload = False
+            elif al in ("list", "listlocal"):
+                listLocal = True
+            elif al in ("list-global", "listServer"):
+                listServer = True
         else:
-            if a is not None and len(a) > 0:
+            al = a.lower()
+            if al == "debug":
+                __debug = True
+            elif al == "force":
+                forceDownload = True
+            elif al in ("list", "listlocal"):
+                listLocal = True
+            elif al == "listServer":
+                listServer = True
+            elif a is not None and len(a) > 0:
                 args.append(a)
 
     if __debug:
         debug("forceDownload", forceDownload)
+        debug("sheetPath", sheetPath)
         debug("args", args)
+        debug("listLocal", listLocal)
+        debug("listServer", listServer)
+
+    if listLocal:
+        print("local cheat sheets (" + sheetPath + ")")
+        files = glob.glob(os.path.join(sheetPath, "*"))
+        for f in files:
+            print(" " + getFileName(f))
+        sys.exit(0)
+
+    if listServer:
+        print("not implemented")
+        sys.exit(0)
 
     if not validateFile(args[0], forceDownload):
         sys.exit(1)
