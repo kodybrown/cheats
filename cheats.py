@@ -124,7 +124,7 @@ def listServer():
             print("  location: " + u + "")
             print("  files that exist locally are denoted with an asterisk (*)")
             print("")
-        files = ["aes", "mysql", "git"] # TODO Get the list of files on the server..
+        files = ["<not implemented>"] # TODO Get the list of files on the server..
         fileIndex = 0
         for f in files:
             fileIndex += 1
@@ -132,8 +132,6 @@ def listServer():
             print("" + f + islocal)
         if fileIndex == 0:
             print("there are no files on this server")
-    print("")
-    print("<not implemented>")
 
 def removeSheet( sheetname ):
     global sheetPath
