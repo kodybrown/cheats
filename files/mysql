@@ -1,0 +1,117 @@
+
+MySQL
+=====
+
+## Configuring mysql
+
+### Set the root user's password
+
+From the console
+    > mysqladmin -u root -h localhost password "Passw0rd"
+
+If there is already a root password
+    > mysqladmin -u root -p -h localhost password "Passw0rd"
+
+As a query
+    mysql> SET PASSWORD FOR 'root'@'%' = PASSWORD('Passw0rd');
+
+### Run mysql as a Windows service
+
+Install the mysql server as a service
+    > mysqld.exe --install "MySQL"
+	
+Uninstall the mysql service
+    > mysqld.exe --remove
+
+### Run mysql manually via mysqld
+
+Start mysql manually
+    > mysqld.exe
+
+Optionally, start it in standalone mode
+    > mysqld.exe --standalone
+
+Shut down mysql server that was manually started
+    > mysqladmin.exe -u root -p shutdown
+
+
+## Running mysql
+
+### Start mysql from a console
+
+    > mysql.exe -u root -p
+
+### Opens a console specifying the database (test)
+
+    > mysql.exe test
+
+### Opens a console specifying the database and credentials
+
+    > mysql.exe -u root test
+
+
+### Connecting to mysql via SSH
+
+    Connect to gametrader.hobosoftware.com via SSH using putty
+    Run,
+    > mysql -p
+
+
+## SQL
+
+### Databases
+
+Select a database for using
+    mysql> use database_name;
+
+Create database
+    mysql> create database database_name;
+
+### Users
+
+Create user
+    mysql> create user user_name;
+
+Change user permissions
+    mysql> grant select, insert, update, delete on database_name.* to 'user_name'@'localhost' identified by 'obscure';
+    mysql> grant select, insert, update, delete on table_name.* to 'user_name'@'localhost' identified by 'obscure';
+
+Set user password
+    mysql> set password for 'user_name'@'localhost' = password('user_password');
+
+### Tables
+
+Create a table
+    mysql> CREATE TABLE table_name ( 
+        col_name INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+        data_col VARCHAR(100),
+        last_login TIMESTAMP default NOW(),
+        created_dt TIMESTAMP default NOW()
+    );
+
+Show table definition
+    mysql> desc table_name;
+
+Show table definition (as a SQL statement that can be used to recreate it)
+    mysql> show create table table_name;
+
+Alter table definition
+    mysql> alter table tbl_name add UNIQUE (col_name);
+
+    mysql> alter table tbl_name ADD COLUMN col_name BIGINT not null AUTO_INCREMENT PRIMARY KEY;
+    mysql> alter table tbl_name ADD COLUMN col_name INT default 0;
+    mysql> alter table tbl_name ADD COLUMN col_name INT default 1;
+    mysql> alter table tbl_name ADD COLUMN col_name VARCHAR(35);
+    mysql> alter table tbl_name ADD COLUMN col_name TIMESTAMP(8);
+    mysql> alter table tbl_name ADD COLUMN col_name TIMESTAMP default NOW();
+
+    mysql> alter table tbl_name DROP COLUMN col_name;
+
+    mysql> alter table tbl_name MODIFY col_name VARCHAR(35);
+
+    mysql> alter table tbl_name CHANGE orig_col_name new_col_name VARCHAR(10);
+
+### Limiting records returned (similar to 'TOP n' in SQL Server)
+    mysql> select * from table limit 10;
+
+

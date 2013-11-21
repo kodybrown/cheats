@@ -1,0 +1,42 @@
+
+Microsoft SQL Server
+====================
+
+# General Database Tips
+
+## How to re-index all of the tables
+
+    sp_MSforeachtable @command1="print '?' DBCC DBREINDEX ('?')"
+
+## Check database integrity
+
+    EXEC sp_dboption 'ServiceRP', 'single user', 'TRUE'
+    EXEC sp_dboption 'ServiceRP', 'single user', 'FALSE'
+    DBCC CHECKDB ( 'ServiceRP', REPAIR_ALLOW_DATA_LOSS ) WITH ALL_ERRORMSGS 
+    /*  | REPAIR_ALLOW_DATA_LOSS 
+        | REPAIR_FAST 
+        | REPAIR_REBUILD  */
+
+## Shrink database files
+
+    use DatabaseName;
+    backup log DatabaseName WITH truncate_only;
+    dbcc shrinkfile (DatabaseName_log,64,Truncateonly);
+
+## Get the MaxAllowedConcurrentSqlConnections
+
+    SELECT
+        @@SPID AS SPID
+        , GETDATE() AS DateTimeStamp
+        , SYSTEM_USER AS SystemUser
+        , CURRENT_USER AS CurrentUser
+        , SESSION_USER AS SessionUser
+        , USER_NAME() AS UserName
+        , @@MAX_CONNECTIONS AS MaxAllowedConcurrentSqlConnections;
+	  
+    SELECT @@SPID AS SPID, GETDATE() AS DateTimeStamp, SYSTEM_USER AS SystemUser, CURRENT_USER AS CurrentUser, SESSION_USER AS SessionUser, USER_NAME() AS UserName, @@MAX_CONNECTIONS AS MaxAllowedConcurrentSqlConnections;
+
+
+
+
+

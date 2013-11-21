@@ -105,7 +105,15 @@ def usage():
     print("")
     print("OPTIONS:")
     print("    --debug        Outputs (a lot of) additional details about what is going on, etc.")
-    #print("    --download     Forces download even if it already exists locally.")
+    print("")
+    print("    --download     Forces download even if it already exists locally.")
+    print("")
+    # TODO
+    # --search <keyword>
+    # --remove
+    # --create
+    # --update
+    # --push|upload
 
 def main():
     global __debug, sheetPath, downloadUrls
@@ -159,7 +167,8 @@ def main():
 
     # my cat utility already handles outputting files via cli..
     # https://github.com/kodybrown/cat
-    os.system("cat -w " + destfile)
+    debug("executing", "cat -w --force-plugin:md " + destfile)
+    os.system("cat -w --force-plugin:md " + destfile)
 
     sys.exit(0)
 
