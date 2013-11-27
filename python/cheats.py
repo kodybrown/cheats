@@ -205,7 +205,7 @@ def main():
                 listLocal()
             elif al in ("list-server", "listserver"):
                 listServer()
-            elif al.startswith("remove:") || al.startswith("delete:"):
+            elif al.startswith("remove:") or al.startswith("delete:"):
                 removeSheet(a[7:])
         else:
             al = a.lower()
