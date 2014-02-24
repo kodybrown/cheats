@@ -1,4 +1,3 @@
-
 # git
 
 [http://cheat.errtheblog.com/s/git]()
@@ -676,5 +675,3 @@ Change author for all commits with given name
                   git commit-tree "$@";
           fi' HEAD
 
-
-Version 61, updated 46 days ago. 
