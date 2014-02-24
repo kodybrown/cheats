@@ -40,7 +40,7 @@ namespace cheats
 
 		}
 
-		public int run( string file, string arguments )
+		public int run( string file, string arguments = "", int timeoutSeconds = 30 )
 		{
 			Process proc;
 			StringBuilder s = new StringBuilder();
@@ -86,7 +86,7 @@ namespace cheats
 				//	Thread.Sleep(250);
 				//}
 
-				proc.WaitForExit();
+				proc.WaitForExit(timeoutSeconds * 1000);
 				return proc.ExitCode;
 
 			} catch (Exception) {

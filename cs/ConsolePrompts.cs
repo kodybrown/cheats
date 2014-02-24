@@ -23,40 +23,197 @@
 */
 
 using System;
-using System.Text;
+using System.Runtime.InteropServices;
+using System.Threading;
+using Bricksoft.PowerCode;
 
 public static class ConsolePrompts
 {
-	public static void PressAnyKey()
+	static int wrapWidth = Console.WindowWidth;
+	static string errorSpacer = new string('=', wrapWidth);
+
+	public static ConsoleKey Error( string message, string description = "", Exception ex = null, bool promptToContinue = true, bool showDivider = true, int indentation = 6 )
 	{
-		StringBuilder sb;
-		string s;
-		int w;
-		string pad;
+		//string ind = new string(' ', indentation);
 
-		s = " Press any key to exit ";
-		w = (Console.WindowWidth - s.Length) / 2 - 1;
-
-		sb = new StringBuilder();
-		for (int i = 0; i < w; i++) {
-			sb.Append("-");
+		if (showDivider) {
+			console.writeln(errorSpacer);
 		}
-		pad = sb.ToString();
 
-		Console.WriteLine();
-		Console.WriteLine();
-		Console.SetCursorPosition(0, Console.CursorTop - 2);
-		Console.Write(pad + s + pad);
+		Console.WriteLine(message);
+
+		if (description != null && description.Length > 0) {
+			Console.WriteLine(Text.Wrap(string.Format("\nError description:\n{0}", description), Console.WindowWidth, indentation));
+		}
+
+		if (ex != null) {
+			Console.WriteLine(Text.Wrap(string.Format("\nException details:\n{0}\nStack trace:\n{1}", ex.Message, ex.StackTrace), Console.WindowWidth, indentation));
+		}
+
+		if (showDivider && !promptToContinue) {
+			console.writeln(errorSpacer);
+		}
+
+		if (promptToContinue) {
+			return ConsolePrompts.PressAnyKey(centered: true, padChar: '=', animated: true).Key;
+		} else {
+			return ConsoleKey.Escape;
+		}
+	}
+
+	public static ConsoleKeyInfo PressAnyKey( string prompt = " Press any key to exit ", bool interceptKey = true, bool clearAfter = true, bool centered = true, char padChar = '-', bool animated = false, ConsoleColor animatedColor = ConsoleColor.White, ConsoleColor promptColor = ConsoleColor.Gray, ConsoleColor padColor = ConsoleColor.DarkGray )
+	{
+		int top, top2, winWidth, left;
+		bool curVis;
+		string empty;
+		ConsoleKeyInfo k;
+		Thread th = null;
+
+		top = Console.CursorTop;
+		left = Console.CursorLeft;
+		curVis = Console.CursorVisible;
+		winWidth = Console.WindowWidth;
+		empty = new string(' ', winWidth);
 
 		Console.CursorVisible = false;
-		Console.ReadKey(true);
-		Console.SetCursorPosition(0, Console.CursorTop);
 
-		sb.Clear();
-		for (int i = 0; i < Console.WindowWidth - 1; i++) {
-			sb.Append(" ");
+		if (centered) {
+			if (animated && !IsOutputRedirected) {
+				//Console.SetCursorPosition(pad.Length + prompt.Length, top);
+				th = new Thread(new ParameterizedThreadStart(promptThread));
+				th.Start(new { animated = true, prompt = prompt, left = left, centered = true, padChar = padChar, animatedColor = animatedColor, promptColor = promptColor, padColor = padColor });
+			} else {
+				promptThread(new { animated = false, prompt = prompt, left = left, centered = true, padChar = padChar, animatedColor = animatedColor, promptColor = promptColor, padColor = padColor });
+			}
+		} else {
+			if (animated && !IsOutputRedirected) {
+				//Console.SetCursorPosition(prompt.Length, top);
+				th = new Thread(new ParameterizedThreadStart(promptThread));
+				th.Start(new { animated = true, prompt = prompt, left = left, centered = false, padChar = padChar, animatedColor = animatedColor, promptColor = promptColor, padColor = padColor });
+			} else {
+				promptThread(new { animated = false, prompt = prompt, left = left, centered = false, padChar = padChar, animatedColor = animatedColor, promptColor = promptColor, padColor = padColor });
+			}
 		}
-		Console.WriteLine(sb.ToString());
-		Console.CursorVisible = true;
+
+		k = Console.ReadKey(interceptKey);
+
+		if (animated && !IsOutputRedirected) {
+			if (th != null) {
+				if (th.IsAlive) {
+					th.Abort();
+				}
+				th.Join(1000);
+				th = null;
+			}
+		}
+
+		if (clearAfter) {
+			top2 = Console.CursorTop;
+			for (int t = top; t <= top2; t++) {
+				if (t == top) {
+					Console.SetCursorPosition(left, t);
+					Console.Write(new string(' ', winWidth - left));
+				} else {
+					Console.SetCursorPosition(0, t);
+					Console.Write(empty);
+				}
+			}
+
+			Console.SetCursorPosition(left, top);
+		}
+
+		Console.CursorVisible = curVis;
+
+		return k;
 	}
+
+	private static void promptThread( object obj )
+	{
+		dynamic data = obj;
+
+		ConsoleColor backupColor = Console.ForegroundColor;
+		bool bit = false;
+		int top = Console.CursorTop;
+		int w;
+		string pad, pad2;
+
+		try {
+
+			while (true) {
+				if (data.centered) {
+					w = (Console.WindowWidth - data.prompt.Length) / 2;
+					pad = new string(data.padChar, w);
+					if (pad.Length + data.prompt.Length + pad.Length == Console.WindowWidth - 1) {
+						pad2 = new string(data.padChar, w + 1);
+					} else {
+						pad2 = pad;
+					}
+
+					Console.SetCursorPosition(data.left, top);
+
+					Console.ForegroundColor = data.padColor;
+					Console.Write(pad);
+
+					if (bit) {
+						Console.ForegroundColor = data.animatedColor;
+					} else {
+						Console.ForegroundColor = data.promptColor;
+					}
+					Console.Write(data.prompt);
+
+					Console.ForegroundColor = data.padColor;
+					Console.Write(pad2);
+				} else {
+					if (bit) {
+						Console.ForegroundColor = data.animatedColor;
+					} else {
+						Console.ForegroundColor = data.promptColor;
+					}
+					Console.CursorLeft = data.left;
+					console.write(data.prompt);
+				}
+
+				if (!data.animated) {
+					break;
+				}
+				bit = !bit;
+				Thread.Sleep(bit ? 400 : 750);
+			}
+
+		} catch (ThreadAbortException) {
+			// do nothing..
+		} finally {
+			//Console.CursorTop = top;
+			Console.ForegroundColor = backupColor;
+		}
+	}
+
+	#region Console Redirection
+
+	private static bool IsOutputRedirected
+	{
+		get { return FileType.Char != GetFileType(GetStdHandle(StdHandle.Stdout)); }
+	}
+
+	public static bool IsInputRedirected
+	{
+		get { return FileType.Char != GetFileType(GetStdHandle(StdHandle.Stdin)); }
+	}
+
+	public static bool IsErrorRedirected
+	{
+		get { return FileType.Char != GetFileType(GetStdHandle(StdHandle.Stderr)); }
+	}
+
+	// P/Invoke:
+	private enum FileType { Unknown, Disk, Char, Pipe };
+	private enum StdHandle { Stdin = -10, Stdout = -11, Stderr = -12 };
+
+	[DllImport("kernel32.dll")]
+	private static extern FileType GetFileType( IntPtr hdl );
+
+	[DllImport("kernel32.dll")]
+	private static extern IntPtr GetStdHandle( StdHandle std );
+
+	#endregion
 }

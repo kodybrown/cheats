@@ -34,17 +34,17 @@ namespace cheats
 {
 	public class Program
 	{
+		static string appname = "cheats";
+
 		static Config config = new Config();
 		static EnvironmentVariables envars = new EnvironmentVariables();
-
-		static string appname = "cheats";
 
 		static bool __debug;
 		static bool __pause;
 		static string cheatsPath;
 		static bool saveToConfig;
-		static bool showHeader;
-		static bool setShowHeader;
+		//static bool showHeader;
+		//static bool setShowHeader;
 		static bool forceDownload;
 		static bool setForceDownload;
 		static List<string> urls;
@@ -63,15 +63,15 @@ namespace cheats
 			// Apply default settings, that cannot be saved in config, nor set in envars.
 			__pause = false;
 			saveToConfig = false;
-			setShowHeader = false;
+			//setShowHeader = false;
 			setForceDownload = false;
 			sheetName = "";
 
-			// Apply settings from config first, then check envars.
+			// Apply settings from config first, then check envars (if allowed).
 			__debug = config.attr<bool>("debug");
-			cheatsPath = config.attr<string>("cheatsPath", Path.Combine(envars.attr<string>("AppData"), ".cheats"));
-			showHeader = config.contains("showHeader") ? config.attr<bool>("showHeader") : envars.attr<bool>("header", true);
-			forceDownload = config.contains("forceDownload") ? config.attr<bool>("forceDownload") : envars.attr<bool>("force", true);
+			cheatsPath = config.contains("cheats-path") ? config.attr<string>("cheats-path") : Path.Combine(envars.global<string>("AppData"), ".cheats");
+			//showHeader = config.contains("show-header") ? config.attr<bool>("show-header") : envars.attr<bool>("header", true);
+			forceDownload = envars.attr<bool>("force-download", false);
 			urls = config.contains("urls") ? config.attr<List<string>>("urls") : envars.attr<List<string>>("urls", new List<string>(new string[] { "https://raw.github.com/kodybrown/cheats/master/files/" }));
 
 			if (!config.exists() && !saveToConfig) {
@@ -80,29 +80,52 @@ namespace cheats
 			}
 
 			for (int i = 0; i < args.Length; i++) {
-				if (!handleCommand(args[i])) {
+				if (args[i].Equals("/?") || args[i].Equals("--help", StringComparison.CurrentCultureIgnoreCase)) {
+					showUsage();
+					if (__pause) {
+						ConsolePrompts.PressAnyKey();
+					}
+					return 0;
+				} else if (!handleCommand(args[i])) {
 					sheetName = args[i];
 				}
 			}
 
 			if (saveToConfig) {
-				if (setShowHeader) {
-					config.attr<bool>("showHeader", showHeader);
-				}
+				//if (setShowHeader) {
+				//	config.attr<bool>("show-header", showHeader);
+				//}
 				if (setForceDownload) {
-					config.attr<bool>("forceDownload", forceDownload);
+					config.attr<bool>("force-download", forceDownload);
 				}
 				config.write();
 			}
 
-			if (!validateFile(sheetName)) {
-				return 1;
+			if (sheetName.Length > 0) {
+				if (!validateFile(sheetName)) {
+					return 1;
+				}
+
+				//string filename = "cat.exe";
+				//string arguments = "-w --force-plugin:markdown \"" + Path.Combine(cheatsPath, sheetName) + "\"";
+				//new Command().run(filename, arguments);
+
+				cat.CatOptions catOptions = new cat.CatOptions();
+
+				catOptions.ignoreBlankLines = false;
+				catOptions.ignoreWhitespaceLines = false;
+				catOptions.pauseAfterEachPage = false;
+				catOptions.pauseAtEnd = false;
+				catOptions.showLineNumbers = false;
+				catOptions.wrapText = true;
+
+				catOptions.forceSpecificPlugin = "markdown";
+
+				catOptions.files = new List<string>();
+				catOptions.files.Add(Path.Combine(cheatsPath, sheetName));
+
+				return new cat.cat().run(catOptions);
 			}
-
-			string filename = "cat.exe";
-			string arguments = "-w --force-plugin:markdown \"" + Path.Combine(cheatsPath, sheetName) + "\"";
-
-			new Command().run(filename, arguments);
 
 			return 0;
 		}
@@ -116,12 +139,7 @@ namespace cheats
 			}
 			al = a.ToLowerInvariant();
 
-			if (al.Equals("?") || al.Equals("help")) {
-				showUsage();
-				if (__pause) {
-					ConsolePrompts.PressAnyKey();
-				}
-			} else if (al.Equals("debug")) {
+			if (al.Equals("debug")) {
 				__debug = true;
 			} else if (al.Equals("!debug")) {
 				__debug = false;
@@ -129,19 +147,19 @@ namespace cheats
 				__pause = true;
 			} else if (al.Equals("config")) {
 				saveToConfig = true;
-			} else if (al.Equals("header") || al.Equals("showheader") || al.Equals("show-header")) {
-				showHeader = true;
-				setShowHeader = true;
-			} else if (al.StartsWith("!header") || al.StartsWith("!showheader") || al.StartsWith("!show-header")
-					|| al.StartsWith("hideheader") || al.StartsWith("hide-header")) {
-				showHeader = false;
-				setShowHeader = true;
+				//} else if (al.Equals("header") || al.Equals("showheader") || al.Equals("show-header")) {
+				//	showHeader = true;
+				//	setShowHeader = true;
+				//} else if (al.StartsWith("!header") || al.StartsWith("!showheader") || al.StartsWith("!show-header")
+				//		|| al.StartsWith("hideheader") || al.StartsWith("hide-header")) {
+				//	showHeader = false;
+				//	setShowHeader = true;
 			} else if (al.Equals("force") || al.Equals("force-download")) {
 				forceDownload = true;
 				setForceDownload = true;
-			} else if (al.Equals("list") || al.Equals("listlocal") || al.Equals("list-local")) {
+			} else if (al.Equals("ls") || al.Equals("list") || al.Equals("listlocal") || al.Equals("list-local")) {
 				listLocal();
-			} else if (al.Equals("listserver") || al.Equals("list-server")) {
+			} else if (al.Equals("ls-server") || al.Equals("listserver") || al.Equals("list-server")) {
 				listServer();
 			} else if (al.StartsWith("remove:") || al.StartsWith("delete:")) {
 				removeSheet(a.Substring(7));
@@ -260,12 +278,32 @@ namespace cheats
 			if (__debug) {
 				Console.WriteLine("listLocal()");
 			}
+
+			string[] files = Directory.GetFiles(cheatsPath, "*.*", SearchOption.AllDirectories);
+
+			if (files.Length > 0) {
+				foreach (string f in files) {
+					console.writeln(Path.GetFileName(f));
+				}
+			} else {
+				console.writeln(ConsoleColor.DarkCyan, "--none--");
+			}
 		}
 
 		public static void listServer()
 		{
 			if (__debug) {
 				Console.WriteLine("listServer()");
+			}
+
+			string[] files = Directory.GetFiles(cheatsPath, "*.*", SearchOption.AllDirectories);
+
+			if (files.Length > 0) {
+				foreach (string f in files) {
+					console.writeln(Path.GetFileName(f));
+				}
+			} else {
+				console.writeln(ConsoleColor.DarkCyan, "--none--");
 			}
 		}
 
@@ -275,7 +313,14 @@ namespace cheats
 				Console.WriteLine("removeSheet('" + name + "')");
 			}
 
-			//sheetPath
+			if (sheetName.Length > 0) {
+				string tmp = Path.Combine(cheatsPath, sheetName);
+				if (File.Exists(tmp)) {
+					File.SetAttributes(tmp, FileAttributes.Normal);
+					File.Delete(tmp);
+					console.writeln(ConsoleColor.Cyan, "deleted `{0}`", sheetName);
+				}
+			}
 		}
 
 		public static void addSource( string url )
@@ -296,13 +341,38 @@ namespace cheats
 
 		public static void showUsage()
 		{
-			int w = Console.WindowWidth - 1;
+			int w = Console.WindowWidth,
+				indent = 18;
+
 
 			if (__debug) {
-				Console.WriteLine("cheats.exe");
+				//Console.WriteLine("");
 			}
 
-			Console.WriteLine(Text.Wrap(string.Format("{0}.exe", appname), w, 0));
+			console.writeln(ConsoleColor.White, "{0}.exe", appname);
+			console.writeln("Created 2009-2013 @wasatchwizard");
+			console.writeln();
+			console.writeln(ConsoleColor.White, "USAGE:");
+			console.writeln(Text.Wrap(string.Format("  {0} [options][sheet-name]", appname), w, 0));
+			console.writeln();
+			console.writeln(ConsoleColor.White, "OPTIONS:");
+			console.writeln(Text.Wrap("  --debug         Outputs additional details while processing.", w, 0, indent));
+			console.writeln(Text.Wrap("  --pause         Pause at the end of processing.", w, 0, indent));
+			console.writeln();
+			//console.writeln(Text.Wrap("  --config        Saves the current specified settings.", w, 0, indent));
+			//console.writeln();
+			console.writeln(Text.Wrap("  --ls            Lists the local cheat sheets.", w, 0, indent));
+			console.writeln(Text.Wrap("  --ls-server     Lists the cheat sheets available online, by source.", w, 0, indent));
+			//console.writeln(Text.Wrap("  --header        Outputs a header.", w, 0, indent));
+			console.writeln();
+			console.writeln(Text.Wrap("  --create        Creates a cheat sheet locally using the specified `sheet-name`.", w, 0, indent));
+			console.writeln(Text.Wrap("  --push          Submits (uploads) the specified `sheet-name`. It will be created on the server, if it doesn't already exist.", w, 0, indent));
+			console.writeln(Text.Wrap("  --revert        Reverts a local cheat sheet using the specified `sheet-name` (functionally equivalent to --force).", w, 0, indent));
+			console.writeln(Text.Wrap("  --remove        Deletes a local cheat sheet using the specified `sheet-name`.", w, 0, indent));
+			console.writeln();
+			console.writeln(Text.Wrap("  --force         Download the cheat sheet from online, even if it is already local (functionally equivalent to --revert).", w, 0, indent));
+			console.writeln(Text.Wrap("  --addsrc:url    Adds the specified `url` to the list of sources.", w, 0, indent));
+			console.writeln(Text.Wrap("  --remsrc:url    Removes the specified `url` from the list of sources.", w, 0, indent));
 
 		}
 	}

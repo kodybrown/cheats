@@ -30,7 +30,7 @@ using System.Text;
 
 namespace Bricksoft.PowerCode
 {
-	public class Config
+	public class Config : IEnumerable<KeyValuePair<string, object>>
 	{
 		private Dictionary<string, object> data;
 		private Dictionary<string, string> comments;
@@ -60,7 +60,7 @@ namespace Bricksoft.PowerCode
 		//		if (data.ContainsKey(key)) {
 		//			data[key] = value;
 		//		} else {
-		//			data.Add(key, value);
+		//			data.add(key, value);
 		//		}
 		//	}
 		//}
@@ -93,6 +93,24 @@ namespace Bricksoft.PowerCode
 			this.read();
 		}
 
+
+		#region IEnumerable<KeyValuePair<string,object>> Members
+
+		public IEnumerator<KeyValuePair<string, object>> GetEnumerator()
+		{
+			return data.GetEnumerator();
+		}
+
+		#endregion
+
+		#region IEnumerable Members
+
+		System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+		{
+			return data.GetEnumerator();
+		}
+
+		#endregion
 
 		public void clear() { data.Clear(); }
 
@@ -346,7 +364,7 @@ namespace Bricksoft.PowerCode
 		public T attr<T>( string key )
 		{
 			if (key == null || key.Length == 0) {
-				throw new InvalidOperationException("name is required");
+				throw new InvalidOperationException("key is required");
 			}
 
 			if (data.ContainsKey(key)) {
@@ -434,7 +452,7 @@ namespace Bricksoft.PowerCode
 		public string comment( string key )
 		{
 			if (key == null || key.Length == 0) {
-				throw new InvalidOperationException("name is required");
+				throw new InvalidOperationException("key is required");
 			}
 
 			if (comments.ContainsKey(key)) {
@@ -453,7 +471,7 @@ namespace Bricksoft.PowerCode
 		public void comment( string key, string value )
 		{
 			if (key == null || key.Length == 0) {
-				throw new InvalidOperationException("name is required");
+				throw new InvalidOperationException("key is required");
 			}
 
 			if (comments.ContainsKey(key)) {
